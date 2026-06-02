@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, Tray } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -16,10 +16,18 @@ function createWindow() {
   });
 
   win.loadFile('index.html');
+
+  //Hide window instead of closing
+  win.on('close', (event) => {
+    event.preventDefault();
+    win.hide();
+  });
 }
 
 app.whenReady().then(() => {
   createWindow();
+
+  //Menu Setup
 
 const menuTemplate = [
   {
@@ -65,6 +73,36 @@ const menuTemplate = [
 const menu = Menu.buildFromTemplate(menuTemplate);
 Menu.setApplicationMenu(menu);
 
+
+// System Tray Setup
+
+let tray = new Tray(path.join(__dirname, 'trayIcon.png'));
+
+const trayMenu = Menu.buildFromTemplate([
+  {
+    label: 'Show App',
+    click: () => {
+      BrowserWindow.getAllWindows()[0].show();
+    }
+  },
+  {
+    label: 'Quit',
+    click: () => app.quit()
+  }
+]);
+
+tray.setToolTip('Quick Note Taker');
+tray.setContextMenu(trayMenu);
+
+tray.on('double-click', () => {
+  const win = BrowserWindow.getAllWindows()[0];
+
+  if (win.isVisible()) {
+    win.hide();
+  } else {
+    win.show();
+  }
+});
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
